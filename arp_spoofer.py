@@ -102,9 +102,10 @@ if option.all:
     print("[+] Spoofing all devices in the network")
     print("[+] Scanning network for devices")
     res = scan_network(option.gateway_ip + "/24", option.timeout)
-    # print("[+] Found " + str(len(res)) + " devices")
-    for i in res:
-        print("[+] Spoofing " + i[1].psrc)
+    print("[+] Found " + str(len(res)) + " devices")
+    print(str(res))
+    # for i in res:
+    #     print("[+] Spoofing " + i[1].psrc)
         # start_attack(i[1].psrc, option.gateway_ip)
 
 elif option.list_ip:
