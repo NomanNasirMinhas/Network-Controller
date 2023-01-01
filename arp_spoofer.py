@@ -12,6 +12,7 @@ def get_arguments():
     parser.add_argument('-l', "--ips", dest="list_ip", nargs='+', type=str, help='List of IP addresses separated by comma')
     parser.add_argument("-a", "--all", dest="all", help="Spoof all devices in the network", action="store_true")
     parser.add_argument("-g", "--gateway", dest="gateway_ip", help="Gateway IP", required=True)
+    parser.add_argument("-m", "--mode", dest="mode", choices=['d', 'm'], required=True, help="To Deny(d) or Monitor(m) the traffic")
     parser.add_argument("-i", "--iface", dest="iface", help="Network Interface to Use", required=False)
     parser.add_argument("--timeout", dest="timeout", type=int, help="Timeout for broadcasting ARP request", required=False)
 
