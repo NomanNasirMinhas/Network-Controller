@@ -54,7 +54,7 @@ def restore_arp_table(victim_ip, victim_mac, false_requester_ip, false_requester
         scapy.send(target_arp_packet, verbose=False)  # To modify ARP table of victim
     except:
         print("[-] Could not send ARP packet to " + victim_ip + ". Exiting.")
-        exit()
+        exit(1)
 
 def scan_network(ip, timeout=3):
     arp_req = scapy.ARP(pdst=ip)
