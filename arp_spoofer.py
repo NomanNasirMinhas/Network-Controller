@@ -38,6 +38,8 @@ def restore_arp_table(victim_ip, false_requester_ip):
 
 
 option = get_arguments()
+print("MAC of target: " + get_mac(option.target_ip))
+print("MAC of gateway: " + get_mac(option.gateway_ip))
 count = 0
 try:
     while True:
