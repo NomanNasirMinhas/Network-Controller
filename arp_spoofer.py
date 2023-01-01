@@ -17,7 +17,7 @@ def get_arguments():
 
     options = parser.parse_args()
     # Check if at least one argument was provided
-    if not any([parser.list_ip, parser.target_ip, parser.all]):
+    if not any([options.list_ip, options.target_ip, options.all]):
         parser.error("At least one argument is required from -t, -l, -a")
     elif not options.gateway_ip:
         parser.error("[-] Please specify a gateway IP, use --help for more info.")
