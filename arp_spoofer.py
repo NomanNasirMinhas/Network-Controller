@@ -86,6 +86,12 @@ def start_attack(target_ip, gateway_ip):
         print("[+] ARP Tables Reset Successfully")
 
 option = get_arguments()
+print("[+][+]\t\tWelcome to Network Controller\t\t[+][+]")
+if option.mode == 'd':
+    print("[+] Starting ARP Spoofing Attack in Deny Mode")
+else:
+    print("[+] Starting ARP Spoofing Attack in Monitor Mode")
+
 start_attack(option.target_ip, option.gateway_ip)
 
 
