@@ -1,5 +1,6 @@
+import logging
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 import time
-
 import scapy.all as scapy
 import argparse
 
