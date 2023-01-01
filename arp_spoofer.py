@@ -34,7 +34,7 @@ def get_mac(ip):
         return answered_list[0][1].hwsrc
     except IndexError:
         print("[-] Could not get MAC address for " + ip + ". Exiting.")
-        exit()
+        exit(1)
 
 
 def spoof_arp_table(victim_ip, victim_mac, false_requester_ip):
@@ -44,7 +44,7 @@ def spoof_arp_table(victim_ip, victim_mac, false_requester_ip):
         scapy.send(target_arp_packet, verbose=False)  # To modify ARP table of victim
     except:
         print("[-] Could not send ARP packet to " + victim_ip + ". Exiting.")
-        exit()
+        exit(1)
 
 
 def restore_arp_table(victim_ip, victim_mac, false_requester_ip, false_requester_mac):
