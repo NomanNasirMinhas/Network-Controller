@@ -69,6 +69,7 @@ def scan_network(ip, timeout=2):
     arp_broadcast = broadcast / arp_req
     # arp_broadcast.show()
     answered = scapy.srp(arp_broadcast, timeout=timeout, verbose=False)[0]
+    print("[+] Found " + str(len(answered)) + " devices")
     return answered
 
 
@@ -102,7 +103,6 @@ if option.all:
     print("[+] Spoofing all devices in the network")
     print("[+] Scanning network for devices")
     res = scan_network(option.gateway_ip + "/24", option.timeout)
-    print("[+] Found " + str(len(res)) + " devices")
     print(str(res))
     # for i in res:
     #     print("[+] Spoofing " + i[1].psrc)
