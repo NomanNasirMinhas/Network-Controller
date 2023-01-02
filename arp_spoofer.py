@@ -6,6 +6,10 @@ import argparse
 import sys
 import threading
 
+import pyfiglet
+ascii_banner = pyfiglet.figlet_format("Network Hacker",font="banner3-D")
+print(ascii_banner)
+
 def get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--target", dest="target_ip", help="Target IP")
@@ -78,6 +82,7 @@ def start_attack(target_ip, gateway_ip):
     count = 0
     try:
         while True:
+            # print("\n[+] Spoofing ARP table of " + target_ip + " to " + gateway_ip)
             spoof_arp_table(target_ip, target_mac, gateway_ip)
             spoof_arp_table(gateway_ip, gateway_mac, target_ip)
             count += 1
