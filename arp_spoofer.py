@@ -6,9 +6,9 @@ import argparse
 import sys
 import multiprocessing as mp
 
-import pyfiglet
-ascii_banner = pyfiglet.figlet_format("Network Hacker",font="banner3-D")
-print(ascii_banner)
+# import pyfiglet
+# ascii_banner = pyfiglet.figlet_format("Network Hacker",font="banner3-D")
+# print(ascii_banner)
 
 def get_arguments():
     parser = argparse.ArgumentParser()
