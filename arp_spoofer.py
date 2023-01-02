@@ -101,7 +101,9 @@ if __name__ == "__main__":
     option = get_arguments()
     processes = []
     targets = []
+    print("=================================================================================")
     print("\n[+][+]\t\tWelcome to Network Controller\t\t[+][+]\n")
+    print("=================================================================================")
     if option.mode == 'd':
         subprocess.call("sudo echo 0 > /proc/sys/net/ipv4/ip_forward", shell=True)
         print("[+] Starting ARP Spoofing Attack in Deny Mode")
